@@ -27,7 +27,7 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        /* Abstract animated landing background */
+        /* Latar belakang abstrak bergerak lembut pada halaman masuk */
         .landing-canvas {
             position: relative;
             min-height: 100vh;
@@ -138,7 +138,7 @@
             transform: translateX(6px);
         }
 
-        /* Classification active buttons */
+        /* Gaya butang klasifikasi aktif */
         .class-btn-active-official {
             background-color: #0f172a;
             color: #ffffff;
@@ -153,11 +153,80 @@
             box-shadow: 0 8px 20px -6px rgba(127, 29, 29, 0.35);
         }
 
-        /* Strictly center all table headers and cells */
+        /* Menjajarkan semua pengepala dan sel jadual ke tengah */
         #recordsTable th,
         #recordsTable td {
             text-align: center !important;
             vertical-align: middle !important;
+        }
+
+        /* Latar belakang interaktif berwarna lembut untuk ruang kerja & header */
+        .workspace-ambient-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+            --mx: 50%;
+            --my: 25%;
+            background-color: #f8fafc;
+            background-image:
+                radial-gradient(620px circle at var(--mx) var(--my), rgba(56, 189, 248, 0.14), rgba(129, 140, 248, 0.06) 45%, transparent 75%),
+                radial-gradient(circle at 12% 14%, rgba(125, 211, 252, 0.24) 0%, transparent 45%),
+                radial-gradient(circle at 88% 18%, rgba(165, 243, 252, 0.22) 0%, transparent 44%),
+                radial-gradient(circle at 82% 84%, rgba(199, 210, 254, 0.24) 0%, transparent 46%),
+                radial-gradient(circle at 22% 86%, rgba(254, 205, 211, 0.18) 0%, transparent 45%);
+        }
+
+        .workspace-dot-mesh {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(15, 23, 42, 0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
+            -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, #000 35%, transparent 100%);
+            mask-image: radial-gradient(ellipse 85% 75% at 50% 35%, #000 35%, transparent 100%);
+        }
+
+        .ambient-orb {
+            position: absolute;
+            border-radius: 9999px;
+            filter: blur(64px);
+            opacity: 0.55;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+        }
+
+        .ambient-orb-sky {
+            width: 340px;
+            height: 340px;
+            top: -70px;
+            left: 8%;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.42), rgba(125, 211, 252, 0.28));
+            animation: driftOne 18s ease-in-out infinite alternate;
+        }
+
+        .ambient-orb-teal {
+            width: 320px;
+            height: 320px;
+            top: 12%;
+            right: 6%;
+            background: linear-gradient(135deg, rgba(45, 212, 191, 0.32), rgba(129, 140, 248, 0.26));
+            animation: driftTwo 21s ease-in-out infinite alternate;
+        }
+
+        .ambient-orb-warm {
+            width: 300px;
+            height: 300px;
+            bottom: 6%;
+            left: 18%;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.22), rgba(244, 114, 182, 0.22));
+            animation: driftThree 15s ease-in-out infinite alternate;
+        }
+
+        .header-top-accent {
+            height: 3px;
+            width: 100%;
+            background: linear-gradient(90deg, #0284c7, #4f46e5, #0d9488, #e11d48);
         }
 
         .print-only-header {
@@ -177,12 +246,13 @@
                 padding: 0 !important;
             }
 
-            /* Hide everything outside the list card and hide tabs/toolbars/pagination/actions */
+            /* Sembunyikan elemen luaran serta tab, kawalan tapisan, paginasi dan tindakan */
             .no-print,
             #landingView,
             #appHeader,
             #viewRegister,
             #listTabsBar,
+            .workspace-ambient-bg,
             .list-toolbar-controls,
             .pagination-bar,
             .col-tindakan,
@@ -253,7 +323,7 @@
                 print-color-adjust: exact;
             }
 
-            /* Balanced column proportions for A4 landscape so words wrap cleanly */
+            /* Nisbah lebar lajur seimbang pada kertas A4 melintang */
             #recordsTable th:nth-child(1), #recordsTable td:nth-child(1) { width: 4%; white-space: nowrap !important; }
             #recordsTable th:nth-child(2), #recordsTable td:nth-child(2) { width: 8.5%; white-space: nowrap !important; }
             #recordsTable th:nth-child(3), #recordsTable td:nth-child(3) { width: 8.5%; white-space: nowrap !important; }
@@ -268,7 +338,7 @@
 </head>
 <body>
 
-    <!-- LANDING PAGE -->
+    <!-- HALAMAN UTAMA / MASUK -->
     <section id="landingView" class="landing-canvas flex items-center justify-center px-6 py-12">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
@@ -311,10 +381,19 @@
         </div>
     </section>
 
-    <!-- MAIN APPLICATION SHELL -->
+    <!-- KERANGKA APLIKASI UTAMA -->
     <div id="appShell" class="hidden min-h-screen flex flex-col">
-        <!-- TOP HEADER & NAVIGATION -->
-        <header id="appHeader" class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <!-- LATAR BELAKANG INTERAKTIF RUANG KERJA -->
+        <div id="workspaceAmbientBg" class="workspace-ambient-bg" aria-hidden="true">
+            <div class="workspace-dot-mesh"></div>
+            <div id="orbSky" class="ambient-orb ambient-orb-sky"></div>
+            <div id="orbTeal" class="ambient-orb ambient-orb-teal"></div>
+            <div id="orbWarm" class="ambient-orb ambient-orb-warm"></div>
+        </div>
+
+        <!-- KEPALA HALAMAN & NAVIGASI -->
+        <header id="appHeader" class="relative bg-white/80 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30 shadow-xs">
+            <div class="header-top-accent"></div>
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div class="flex items-center gap-3.5">
@@ -324,35 +403,35 @@
                         </button>
                         <div>
                             <div class="flex flex-wrap items-center gap-2.5">
-                                <h2 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                                <h2 class="text-2xl sm:text-[28px] font-extrabold tracking-tight leading-tight bg-gradient-to-r from-slate-900 via-slate-800 to-sky-900 bg-clip-text text-transparent">
                                     Sistem Buku Daftar Surat
                                 </h2>
-                                <span id="syncStatusBadge"
+                                <span id="syncStatusBadge" style="display:none !important;"
                                     class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
                                     <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                                     <span>Menyemak Awan...</span>
                                 </span>
                             </div>
-                            <p class="text-xs text-slate-500 mt-0.5">
-                                Setiausaha Pengarah • Format tarikh DD.MM.YYYY
+                            <p class="text-xs sm:text-sm font-medium text-slate-500 tracking-wide mt-0.5">
+                                Setiausaha Pengarah
                             </p>
                         </div>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
-                        <button type="button" onclick="openSheetsModal()"
+                        <button type="button" onclick="openSheetsModal()" style="display:none !important;"
                             class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition cursor-pointer">
                             <i class="fa-solid fa-table text-emerald-600"></i>
                             <span>Tetapan Sheets</span>
                         </button>
 
-                        <button type="button" id="syncNowBtn" onclick="syncWithCloud(true)"
+                        <button type="button" id="syncNowBtn" onclick="syncWithCloud(true)" style="display:none !important;"
                             class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white shadow-xs transition cursor-pointer">
                             <i id="syncIcon" class="fa-solid fa-rotate"></i>
                             <span>Segerak</span>
                         </button>
 
-                        <!-- Export & Print ONLY appear on Senarai Rekod Surat -->
+                        <!-- Eksport & Cetak hanya dipaparkan pada bahagian Senarai Rekod Surat -->
                         <div id="listActionsGroup" class="hidden items-center gap-2">
                             <div class="relative inline-block">
                                 <button type="button" onclick="toggleExportMenu(event)"
@@ -385,13 +464,13 @@
                     </div>
                 </div>
 
-                <!-- CLEAN SECTION NAVIGATION -->
+                <!-- NAVIGASI UTAMA -->
                 <nav class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
                     <button type="button" id="navRegisterBtn" onclick="switchMainView('register')"
                         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-900 text-white transition cursor-pointer">
                         <i class="fa-solid fa-file-circle-plus"></i>
                         <span>Daftar Rekod Surat Baharu</span>
-                        <span id="draftCounterBadge"
+                        <span id="draftCounterBadge" style="display:none !important;"
                             class="ml-1 px-2 py-0.5 text-xs rounded-full bg-amber-400 text-slate-950 font-bold">
                             0 Draf
                         </span>
@@ -401,7 +480,7 @@
                         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer">
                         <i class="fa-solid fa-list-check"></i>
                         <span>Senarai Rekod Surat</span>
-                        <span id="totalRecordsBadge"
+                        <span id="totalRecordsBadge" style="display:none !important;"
                             class="ml-1 px-2 py-0.5 text-xs rounded-full bg-slate-200 text-slate-800 font-bold">
                             0 Rekod
                         </span>
@@ -410,10 +489,10 @@
             </div>
         </header>
 
-        <!-- MAIN WORKSPACE -->
-        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <!-- RUANG KERJA UTAMA -->
+        <main class="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-            <!-- VIEW 1: REGISTER FORM + DRAFTS BELOW -->
+            <!-- PAPARAN 1: BORANG PENDAFTARAN + SENARAI DRAF -->
             <section id="viewRegister" class="space-y-6">
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-7">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-5 mb-6 border-b border-slate-100">
@@ -437,7 +516,7 @@
                         <input type="hidden" id="editingSource" value="">
                         <input type="hidden" id="klasifikasi" value="Dokumen Rasmi Terperingkat">
 
-                        <!-- CLASSIFICATION SELECTOR -->
+                        <!-- PEMILIHAN KLASIFIKASI -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2.5">
                                 Klasifikasi Dokumen <span class="text-rose-600">*</span>
@@ -459,7 +538,7 @@
                             </div>
                         </div>
 
-                        <!-- FORM FIELDS GRID (dd/mm/yyyy + calendar picker) -->
+                        <!-- MEDAN BORANG (dd/mm/yyyy + kalendar) -->
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <label for="tarikhTerima" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
@@ -556,7 +635,7 @@
                             </div>
                         </div>
 
-                        <!-- ACTION BUTTONS: SIMPAN DRAF & SIMPAN REKOD SURAT -->
+                        <!-- BUTANG SIMPAN DRAF & SIMPAN REKOD SURAT -->
                         <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <button type="button" onclick="handleSaveDraft()"
                                 class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition cursor-pointer">
@@ -573,7 +652,7 @@
                     </form>
                 </div>
 
-                <!-- DRAFTS LIST BELOW THE FORM -->
+                <!-- SENARAI DRAF DI BAWAH BORANG -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-7">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 mb-5 border-b border-slate-100">
                         <div>
@@ -591,15 +670,12 @@
                         </span>
                     </div>
 
-                    <div id="draftsContainer" class="space-y-3">
-                        <!-- Rendered dynamically -->
-                    </div>
+                    <div id="draftsContainer" class="space-y-3"></div>
                 </div>
             </section>
 
-            <!-- VIEW 2: REGISTERED RECORDS LIST -->
+            <!-- PAPARAN 2: SENARAI REKOD SURAT -->
             <section id="viewList" class="hidden space-y-5">
-                <!-- CLASSIFICATION TABS (Hidden during Print via #listTabsBar) -->
                 <div id="listTabsBar" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button type="button" id="tabOfficial" onclick="switchListTab('Dokumen Rasmi Terperingkat')"
                         class="flex items-center justify-between px-5 py-4 rounded-2xl border text-left transition cursor-pointer bg-slate-900 text-white border-slate-900 shadow-sm">
@@ -632,14 +708,11 @@
                     </button>
                 </div>
 
-                <!-- LIST CARD -->
                 <div id="listCardContainer" class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6">
-                    <!-- Print/Export Header: ONLY Title (Centered) & Table -->
                     <div id="printExportHeader" class="print-only-header">
                         <h1 id="printExportTitle" class="print-doc-title">DOKUMEN RASMI TERPERINGKAT</h1>
                     </div>
 
-                    <!-- Filter & Search Controls (Hidden during Print) -->
                     <div class="list-toolbar-controls flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
                         <div>
                             <h3 id="activeListHeading" class="text-base sm:text-lg font-bold text-slate-900">
@@ -682,7 +755,6 @@
                         </div>
                     </div>
 
-                    <!-- TABLE (ALL HEADERS & CELLS CENTERED) -->
                     <div class="table-scroll-wrap overflow-x-auto rounded-xl border border-slate-200">
                         <table id="recordsTable" class="w-full border-collapse text-xs sm:text-sm">
                             <thead>
@@ -699,13 +771,10 @@
                                     <th class="col-tindakan-head px-3 py-3 font-semibold border border-slate-800 whitespace-nowrap">TINDAKAN</th>
                                 </tr>
                             </thead>
-                            <tbody id="recordsTableBody" class="divide-y divide-slate-200 bg-white">
-                                <!-- Rendered dynamically -->
-                            </tbody>
+                            <tbody id="recordsTableBody" class="divide-y divide-slate-200 bg-white"></tbody>
                         </table>
                     </div>
 
-                    <!-- PAGINATION (20 ITEMS PER PAGE) -->
                     <div class="pagination-bar mt-4 pt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs sm:text-sm text-slate-600">
                         <div id="paginationInfo">Memaparkan 0 rekod</div>
                         <div id="paginationControls" class="flex items-center gap-1.5"></div>
@@ -715,7 +784,7 @@
         </main>
     </div>
 
-    <!-- GOOGLE SHEETS SETTINGS MODAL -->
+    <!-- MODAL TETAPAN GOOGLE SHEETS -->
     <div id="sheetsModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -753,7 +822,7 @@
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION -->
+    <!-- NOTIFIKASI TOAST -->
     <div id="toastBanner"
         class="hidden fixed bottom-5 right-5 z-50 max-w-sm bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs sm:text-sm font-medium flex items-center gap-2.5">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
@@ -765,7 +834,63 @@
         const STORAGE_KEY_URL = 'sbds_google_sheets_url_v1';
         const STORAGE_KEY_RECORDS = 'sbds_records_v1';
         const STORAGE_KEY_DRAFTS = 'sbds_drafts_v1';
+        const STORAGE_KEY_SEEDED = 'sbds_preview_seeded_v1';
         const ITEMS_PER_PAGE = 20;
+
+        // Data contoh pejabat pengarah untuk pratonton pertama kali apabila storan kosong
+        const SAMPLE_RECORDS = [
+            {
+                id: 'SRT-2026-101',
+                klasifikasi: 'Dokumen Rasmi Terperingkat',
+                tarikhTerima: '2026-11-18',
+                tarikhSurat: '2026-11-16',
+                noRujukan: 'SUK.SEL/04/12/2026(29)',
+                daripada: 'Pejabat Setiausaha Kerajaan Negeri Selangor',
+                perkara: 'Jemputan Mesyuarat Penyelarasan Bajet & Pembangunan Tahunan',
+                tarikhKeluar: '2026-11-20',
+                kepada: 'Pengarah',
+                catatan: 'Hadir — Setiausaha Pengarah urus jadual'
+            },
+            {
+                id: 'SRT-2026-102',
+                klasifikasi: 'Dokumen Rasmi Terperingkat',
+                tarikhTerima: '2026-11-24',
+                tarikhSurat: '2026-11-23',
+                noRujukan: 'KDN/100-6/1/42(08)',
+                daripada: 'Kementerian Dalam Negeri',
+                perkara: 'Edaran Garis Panduan Keselamatan Dokumen Rasmi Jabatan',
+                tarikhKeluar: '',
+                kepada: 'Unit Pentadbiran & Rekod',
+                catatan: 'Untuk makluman dan edaran unit'
+            },
+            {
+                id: 'SRT-2026-103',
+                klasifikasi: 'Dokumen Sulit',
+                tarikhTerima: '2026-11-25',
+                tarikhSurat: '2026-11-24',
+                noRujukan: 'SULIT.JPA/200-3/9/15(03)',
+                daripada: 'Jabatan Perkhidmatan Awam',
+                perkara: 'Urusan Pertimbangan Pemangkuan Pegawai Pengurusan & Profesional',
+                tarikhKeluar: '',
+                kepada: 'Pengarah',
+                catatan: 'Simpanan sulit dalam fail Pengarah'
+            }
+        ];
+
+        const SAMPLE_DRAFTS = [
+            {
+                id: 'DRF-2026-201',
+                klasifikasi: 'Dokumen Rasmi Terperingkat',
+                tarikhTerima: '2026-11-26',
+                tarikhSurat: '2026-11-25',
+                noRujukan: 'PBG/PTG/08/2026(14)',
+                daripada: 'Pejabat Daerah dan Tanah Petaling',
+                perkara: 'Permohonan Ulasan Teknikal Cadangan Tapak Kemudahan Awam',
+                tarikhKeluar: '',
+                kepada: 'Bahagian Perancangan',
+                catatan: 'Menunggu pengesahan minit Pengarah'
+            }
+        ];
 
         let state = {
             currentView: 'register',
@@ -779,11 +904,23 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             state.sheetsUrl = localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_GOOGLE_SHEETS_URL;
-            state.records = loadFromStorage(STORAGE_KEY_RECORDS);
-            state.drafts = loadFromStorage(STORAGE_KEY_DRAFTS);
+            const rawRec = localStorage.getItem(STORAGE_KEY_RECORDS);
+            const rawDrf = localStorage.getItem(STORAGE_KEY_DRAFTS);
+            const hasSeeded = localStorage.getItem(STORAGE_KEY_SEEDED);
+
+            if (rawRec === null && rawDrf === null && !hasSeeded) {
+                state.records = [...SAMPLE_RECORDS];
+                state.drafts = [...SAMPLE_DRAFTS];
+                localStorage.setItem(STORAGE_KEY_SEEDED, '1');
+                persistLocal();
+            } else {
+                state.records = parseStoredArray(rawRec);
+                state.drafts = parseStoredArray(rawDrf);
+            }
 
             setDefaultTerimaDate();
             renderAll();
+            initInteractiveAmbientBackground();
 
             document.addEventListener('click', (e) => {
                 const dropdown = document.getElementById('exportDropdown');
@@ -799,14 +936,55 @@
             }
         });
 
-        function loadFromStorage(key) {
+        function parseStoredArray(raw) {
             try {
-                const raw = localStorage.getItem(key);
                 const parsed = raw ? JSON.parse(raw) : [];
                 return Array.isArray(parsed) ? parsed : [];
             } catch (_) {
                 return [];
             }
+        }
+
+        /* Menggerakkan cahaya sorotan & orb lembut mengikut tetikus / sentuhan */
+        function initInteractiveAmbientBackground() {
+            const bg = document.getElementById('workspaceAmbientBg');
+            const orbSky = document.getElementById('orbSky');
+            const orbTeal = document.getElementById('orbTeal');
+            const orbWarm = document.getElementById('orbWarm');
+            if (!bg) return;
+
+            let rafId = null;
+            let targetX = 0.5;
+            let targetY = 0.25;
+
+            const applyPointerShift = () => {
+                bg.style.setProperty('--mx', `${(targetX * 100).toFixed(1)}%`);
+                bg.style.setProperty('--my', `${(targetY * 100).toFixed(1)}%`);
+
+                const dx = (targetX - 0.5) * 36;
+                const dy = (targetY - 0.5) * 28;
+
+                if (orbSky) orbSky.style.transform = `translate3d(${dx * 0.7}px, ${dy * 0.7}px, 0)`;
+                if (orbTeal) orbTeal.style.transform = `translate3d(${-dx * 0.6}px, ${dy * 0.5}px, 0)`;
+                if (orbWarm) orbWarm.style.transform = `translate3d(${dx * 0.45}px, ${-dy * 0.65}px, 0)`;
+                rafId = null;
+            };
+
+            const queueShift = (clientX, clientY) => {
+                if (!window.innerWidth || !window.innerHeight) return;
+                targetX = Math.max(0, Math.min(1, clientX / window.innerWidth));
+                targetY = Math.max(0, Math.min(1, clientY / window.innerHeight));
+                if (!rafId) {
+                    rafId = window.requestAnimationFrame(applyPointerShift);
+                }
+            };
+
+            window.addEventListener('mousemove', (e) => queueShift(e.clientX, e.clientY), { passive: true });
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches && e.touches[0]) {
+                    queueShift(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
         }
 
         function persistLocal() {
@@ -871,7 +1049,7 @@
             }
         }
 
-        /* Date formatting helpers: DD.MM.YYYY display/export, dd/mm/yyyy form input */
+        /* Fungsi bantuan format tarikh: paparan/eksport DD.MM.YYYY, input borang dd/mm/yyyy */
         function toIsoDate(val) {
             if (val === null || val === undefined || val === '') return '';
             if (val instanceof Date && !Number.isNaN(val.getTime())) {
@@ -1374,7 +1552,7 @@
             renderListView();
         }
 
-        /* Export & Print (Centered Title + Centered Table Only, A4) */
+        /* Eksport & Cetak: tajuk di tengah + jadual sahaja, format A4 */
         function toggleExportMenu(event) {
             event.stopPropagation();
             document.getElementById('exportDropdown').classList.toggle('hidden');
@@ -1460,7 +1638,7 @@
                 </html>
             `;
 
-            const blob = new Blob(['﻿', docHtml], { type: 'application/msword;charset=utf-8' });
+            const blob = new Blob(['\ufeff', docHtml], { type: 'application/msword;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -1521,7 +1699,7 @@
             showToast('Fail Excel (.xlsx) format A4 berjaya dimuat turun.', 'success');
         }
 
-        /* Google Sheets Modal & Cloud Sync */
+        /* Tetapan Google Sheets & penyegerakan awan */
         function openSheetsModal() {
             document.getElementById('sheetsUrlInput').value = state.sheetsUrl || '';
             document.getElementById('sheetsModal').classList.remove('hidden');
