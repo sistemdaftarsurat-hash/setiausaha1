@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Buku Daftar Surat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+        :root {
+            --ink-primary: #0f172a;
+            --ink-secondary: #475569;
+            --surface-bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--surface-bg);
+            color: var(--ink-primary);
+            min-height: 100vh;
+        }
+
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Abstract animated landing background */
+        .landing-canvas {
+            position: relative;
+            min-height: 100vh;
+            overflow: hidden;
+            background: radial-gradient(circle at 18% 22%, #e0f2fe 0%, transparent 45%),
+                        radial-gradient(circle at 82% 78%, #e2e8f0 0%, transparent 48%),
+                        linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f1f5f9 100%);
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 9999px;
+            filter: blur(56px);
+            opacity: 0.65;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        .blob-1 {
+            width: 360px;
+            height: 360px;
+            top: -80px;
+            left: -70px;
+            background: linear-gradient(135deg, #93c5fd, #bfdbfe);
+            animation: driftOne 16s ease-in-out infinite alternate;
+        }
+
+        .blob-2 {
+            width: 420px;
+            height: 420px;
+            bottom: -110px;
+            right: -90px;
+            background: linear-gradient(135deg, #c7d2fe, #bae6fd);
+            animation: driftTwo 19s ease-in-out infinite alternate;
+        }
+
+        .blob-3 {
+            width: 240px;
+            height: 240px;
+            top: 22%;
+            right: 16%;
+            background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+            animation: driftThree 13s ease-in-out infinite alternate;
+        }
+
+        .geo-ring {
+            position: absolute;
+            border-radius: 32px;
+            border: 1.5px solid rgba(15, 23, 42, 0.08);
+            pointer-events: none;
+        }
+
+        .geo-ring-1 {
+            width: 170px;
+            height: 170px;
+            top: 14%;
+            left: 14%;
+            animation: spinSlow 28s linear infinite;
+        }
+
+        .geo-ring-2 {
+            width: 120px;
+            height: 120px;
+            bottom: 18%;
+            left: 22%;
+            border-radius: 9999px;
+            animation: pulseSoft 7s ease-in-out infinite;
+        }
+
+        @keyframes driftOne {
+            0% { transform: translate(0px, 0px) scale(1); }
+            100% { transform: translate(48px, 36px) scale(1.08); }
+        }
+
+        @keyframes driftTwo {
+            0% { transform: translate(0px, 0px) scale(1); }
+            100% { transform: translate(-44px, -38px) scale(1.06); }
+        }
+
+        @keyframes driftThree {
+            0% { transform: translate(0px, 0px) rotate(0deg); }
+            100% { transform: translate(-28px, 34px) rotate(18deg); }
+        }
+
+        @keyframes spinSlow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulseSoft {
+            0%, 100% { transform: scale(1); opacity: 0.45; }
+            50% { transform: scale(1.14); opacity: 0.85; }
+        }
+
+        @keyframes arrowSlide {
+            0%, 100% { transform: translateX(0px); }
+            50% { transform: translateX(5px); }
+        }
+
+        .enter-btn .enter-arrow {
+            display: inline-flex;
+            transition: transform 0.25s ease;
+            animation: arrowSlide 1.8s ease-in-out infinite;
+        }
+
+        .enter-btn:hover .enter-arrow {
+            animation: none;
+            transform: translateX(6px);
+        }
+
+        /* Classification active buttons */
+        .class-btn-active-official {
+            background-color: #0f172a;
+            color: #ffffff;
+            border-color: #0f172a;
+            box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.35);
+        }
+
+        .class-btn-active-secret {
+            background-color: #7f1d1d;
+            color: #ffffff;
+            border-color: #7f1d1d;
+            box-shadow: 0 8px 20px -6px rgba(127, 29, 29, 0.35);
+        }
+
+        /* Strictly center all table headers and cells */
+        #recordsTable th,
+        #recordsTable td {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
+        .print-only-header {
+            display: none;
+        }
+
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Hide everything outside the list card and hide tabs/toolbars/pagination/actions */
+            .no-print,
+            #landingView,
+            #appHeader,
+            #viewRegister,
+            #listTabsBar,
+            .list-toolbar-controls,
+            .pagination-bar,
+            .col-tindakan,
+            .col-tindakan-head {
+                display: none !important;
+            }
+
+            #appShell,
+            main,
+            #viewList,
+            #listCardContainer {
+                display: block !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                background: transparent !important;
+            }
+
+            .print-only-header {
+                display: block !important;
+                text-align: center !important;
+                margin-bottom: 12px !important;
+            }
+
+            .print-doc-title {
+                text-align: center !important;
+                font-size: 14pt !important;
+                font-weight: 700 !important;
+                letter-spacing: 0.04em !important;
+                color: #000000 !important;
+                margin: 0 !important;
+            }
+
+            .table-scroll-wrap {
+                overflow: visible !important;
+                border: none !important;
+                border-radius: 0 !important;
+            }
+
+            #recordsTable {
+                width: 100% !important;
+                table-layout: auto !important;
+                border-collapse: collapse !important;
+                font-size: 8pt !important;
+            }
+
+            #recordsTable th,
+            #recordsTable td {
+                border: 1px solid #000000 !important;
+                padding: 4px 5px !important;
+                text-align: center !important;
+                vertical-align: middle !important;
+                color: #000000 !important;
+                background: #ffffff !important;
+                white-space: normal !important;
+                word-break: normal !important;
+                overflow-wrap: break-word !important;
+                line-height: 1.3 !important;
+            }
+
+            #recordsTable th {
+                font-weight: 700 !important;
+                background-color: #f1f5f9 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* Balanced column proportions for A4 landscape so words wrap cleanly */
+            #recordsTable th:nth-child(1), #recordsTable td:nth-child(1) { width: 4%; white-space: nowrap !important; }
+            #recordsTable th:nth-child(2), #recordsTable td:nth-child(2) { width: 8.5%; white-space: nowrap !important; }
+            #recordsTable th:nth-child(3), #recordsTable td:nth-child(3) { width: 8.5%; white-space: nowrap !important; }
+            #recordsTable th:nth-child(4), #recordsTable td:nth-child(4) { width: 13%; }
+            #recordsTable th:nth-child(5), #recordsTable td:nth-child(5) { width: 16%; }
+            #recordsTable th:nth-child(6), #recordsTable td:nth-child(6) { width: 22%; }
+            #recordsTable th:nth-child(7), #recordsTable td:nth-child(7) { width: 8.5%; white-space: nowrap !important; }
+            #recordsTable th:nth-child(8), #recordsTable td:nth-child(8) { width: 10.5%; }
+            #recordsTable th:nth-child(9), #recordsTable td:nth-child(9) { width: 9%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LANDING PAGE -->
+    <section id="landingView" class="landing-canvas flex items-center justify-center px-6 py-12">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="geo-ring geo-ring-1"></div>
+        <div class="geo-ring geo-ring-2"></div>
+
+        <div class="relative z-10 w-full max-w-xl bg-white/85 backdrop-blur-xl border border-white/90 shadow-2xl shadow-slate-900/10 rounded-3xl p-8 sm:p-12 text-center">
+            <div class="mx-auto mb-6 w-20 h-20 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg shadow-slate-900/20">
+                <svg class="w-10 h-10" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <rect x="9" y="7" width="26" height="34" rx="4" stroke="currentColor" stroke-width="2.5"/>
+                    <path d="M15 7V41" stroke="#93c5fd" stroke-width="2.5"/>
+                    <rect x="29" y="13" width="10" height="8" rx="2" fill="#38bdf8"/>
+                    <path d="M20 17H30M20 23H30M20 29H27" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>
+            </div>
+
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 mb-2">
+                Pejabat Pengarah • Rekod Rasmi
+            </p>
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">
+                Sistem Buku Daftar Surat
+            </h1>
+            <p class="text-sm sm:text-base text-slate-600 max-w-md mx-auto leading-relaxed mb-8">
+                Pengurusan pendaftaran, draf, carian, dan cetakan rekod surat masuk serta keluar secara teratur dan terselaras.
+            </p>
+
+            <div class="flex flex-col items-center justify-center gap-3">
+                <button type="button" onclick="enterSystem()"
+                    class="enter-btn inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-semibold text-base shadow-xl shadow-slate-900/20 transition-all cursor-pointer">
+                    <span class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-white/15">
+                        <i class="fa-solid fa-book-open text-xs text-sky-300"></i>
+                    </span>
+                    <span>Masuk</span>
+                    <span class="enter-arrow text-sky-300">
+                        <i class="fa-solid fa-arrow-right-long"></i>
+                    </span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN APPLICATION SHELL -->
+    <div id="appShell" class="hidden min-h-screen flex flex-col">
+        <!-- TOP HEADER & NAVIGATION -->
+        <header id="appHeader" class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="flex items-center gap-3.5">
+                        <button type="button" onclick="backToLanding()" title="Kembali ke Laman Utama"
+                            class="w-11 h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center shadow-sm transition cursor-pointer shrink-0">
+                            <i class="fa-solid fa-book-bookmark text-base"></i>
+                        </button>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2.5">
+                                <h2 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                                    Sistem Buku Daftar Surat
+                                </h2>
+                                <span id="syncStatusBadge"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                    <span>Menyemak Awan...</span>
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Setiausaha Pengarah • Format tarikh DD.MM.YYYY
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" onclick="openSheetsModal()"
+                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 transition cursor-pointer">
+                            <i class="fa-solid fa-table text-emerald-600"></i>
+                            <span>Tetapan Sheets</span>
+                        </button>
+
+                        <button type="button" id="syncNowBtn" onclick="syncWithCloud(true)"
+                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-700 text-white shadow-xs transition cursor-pointer">
+                            <i id="syncIcon" class="fa-solid fa-rotate"></i>
+                            <span>Segerak</span>
+                        </button>
+
+                        <!-- Export & Print ONLY appear on Senarai Rekod Surat -->
+                        <div id="listActionsGroup" class="hidden items-center gap-2">
+                            <div class="relative inline-block">
+                                <button type="button" onclick="toggleExportMenu(event)"
+                                    class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs transition cursor-pointer">
+                                    <i class="fa-solid fa-file-export"></i>
+                                    <span>Eksport</span>
+                                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                </button>
+                                <div id="exportDropdown"
+                                    class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-40">
+                                    <button type="button" onclick="exportToWordA4()"
+                                        class="w-full px-4 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer">
+                                        <i class="fa-solid fa-file-word text-blue-600 text-sm"></i>
+                                        <span>Eksport Word (.doc) A4</span>
+                                    </button>
+                                    <button type="button" onclick="exportToExcelA4()"
+                                        class="w-full px-4 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 cursor-pointer">
+                                        <i class="fa-solid fa-file-excel text-emerald-600 text-sm"></i>
+                                        <span>Eksport Excel (.xlsx) A4</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="button" onclick="printActiveList()"
+                                class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition cursor-pointer">
+                                <i class="fa-solid fa-print"></i>
+                                <span>Cetak</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CLEAN SECTION NAVIGATION -->
+                <nav class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                    <button type="button" id="navRegisterBtn" onclick="switchMainView('register')"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-900 text-white transition cursor-pointer">
+                        <i class="fa-solid fa-file-circle-plus"></i>
+                        <span>Daftar Rekod Surat Baharu</span>
+                        <span id="draftCounterBadge"
+                            class="ml-1 px-2 py-0.5 text-xs rounded-full bg-amber-400 text-slate-950 font-bold">
+                            0 Draf
+                        </span>
+                    </button>
+
+                    <button type="button" id="navListBtn" onclick="switchMainView('list')"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Senarai Rekod Surat</span>
+                        <span id="totalRecordsBadge"
+                            class="ml-1 px-2 py-0.5 text-xs rounded-full bg-slate-200 text-slate-800 font-bold">
+                            0 Rekod
+                        </span>
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+            <!-- VIEW 1: REGISTER FORM + DRAFTS BELOW -->
+            <section id="viewRegister" class="space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-7">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-5 mb-6 border-b border-slate-100">
+                        <div>
+                            <h3 id="formHeading" class="text-lg font-bold text-slate-900">
+                                Daftar Rekod Surat Baharu
+                            </h3>
+                            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                                Pilih klasifikasi dokumen, kemudian simpan sebagai draf atau simpan sebagai rekod surat.
+                            </p>
+                        </div>
+                        <button type="button" onclick="resetForm()"
+                            class="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Kosongkan Borang</span>
+                        </button>
+                    </div>
+
+                    <form id="letterForm" onsubmit="handleSaveRecord(event)" class="space-y-6">
+                        <input type="hidden" id="editingId" value="">
+                        <input type="hidden" id="editingSource" value="">
+                        <input type="hidden" id="klasifikasi" value="Dokumen Rasmi Terperingkat">
+
+                        <!-- CLASSIFICATION SELECTOR -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2.5">
+                                Klasifikasi Dokumen <span class="text-rose-600">*</span>
+                            </label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button type="button" id="btnClassOfficial"
+                                    onclick="selectClassification('Dokumen Rasmi Terperingkat')"
+                                    class="class-btn-active-official flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl border text-sm font-semibold transition cursor-pointer">
+                                    <i class="fa-solid fa-file-shield"></i>
+                                    <span>Dokumen Rasmi Terperingkat</span>
+                                </button>
+
+                                <button type="button" id="btnClassSecret"
+                                    onclick="selectClassification('Dokumen Sulit')"
+                                    class="bg-white hover:bg-rose-50/50 text-slate-700 border-slate-300 flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl border text-sm font-semibold transition cursor-pointer">
+                                    <i class="fa-solid fa-user-secret"></i>
+                                    <span>Dokumen Sulit</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- FORM FIELDS GRID (dd/mm/yyyy + calendar picker) -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label for="tarikhTerima" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                    Tarikh Terima
+                                </label>
+                                <div class="relative flex items-center">
+                                    <input type="text" id="tarikhTerima" placeholder="dd/mm/yyyy" maxlength="10"
+                                        oninput="maskSlashDateInput(this)" onblur="normalizeSlashDateField(this)"
+                                        class="w-full pr-10 pl-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono-code text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                                    <button type="button" onclick="openNativeDatePicker('tarikhTerimaPicker')" title="Pilih tarikh dari kalendar"
+                                        class="absolute right-2.5 p-1.5 text-slate-500 hover:text-slate-900 transition cursor-pointer">
+                                        <i class="fa-regular fa-calendar"></i>
+                                    </button>
+                                    <input type="date" id="tarikhTerimaPicker" tabindex="-1"
+                                        onchange="syncPickerToSlashInput('tarikhTerimaPicker', 'tarikhTerima')"
+                                        class="sr-only">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="tarikhSurat" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                    Tarikh Surat
+                                </label>
+                                <div class="relative flex items-center">
+                                    <input type="text" id="tarikhSurat" placeholder="dd/mm/yyyy" maxlength="10"
+                                        oninput="maskSlashDateInput(this)" onblur="normalizeSlashDateField(this)"
+                                        class="w-full pr-10 pl-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono-code text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                                    <button type="button" onclick="openNativeDatePicker('tarikhSuratPicker')" title="Pilih tarikh dari kalendar"
+                                        class="absolute right-2.5 p-1.5 text-slate-500 hover:text-slate-900 transition cursor-pointer">
+                                        <i class="fa-regular fa-calendar"></i>
+                                    </button>
+                                    <input type="date" id="tarikhSuratPicker" tabindex="-1"
+                                        onchange="syncPickerToSlashInput('tarikhSuratPicker', 'tarikhSurat')"
+                                        class="sr-only">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="noRujukan" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                    No. Rujukan <span class="text-rose-600">*</span>
+                                </label>
+                                <input type="text" id="noRujukan" required placeholder="Cth: JKR/PTG/01/2026(12)"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                            </div>
+
+                            <div>
+                                <label for="daripada" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                    Daripada <span class="text-rose-600">*</span>
+                                </label>
+                                <input type="text" id="daripada" required placeholder="Nama jabatan / agensi / pengirim"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label for="perkara" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                    Perkara <span class="text-rose-600">*</span>
+                                </label>
+                                <input type="text" id="perkara" required placeholder="Ringkasan perkara / tajuk surat"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                            </div>
+
+                            <div>
+                                <label for="tarikhKeluar" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                    Tarikh Keluar
+                                </label>
+                                <div class="relative flex items-center">
+                                    <input type="text" id="tarikhKeluar" placeholder="dd/mm/yyyy" maxlength="10"
+                                        oninput="maskSlashDateInput(this)" onblur="normalizeSlashDateField(this)"
+                                        class="w-full pr-10 pl-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-mono-code text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                                    <button type="button" onclick="openNativeDatePicker('tarikhKeluarPicker')" title="Pilih tarikh dari kalendar"
+                                        class="absolute right-2.5 p-1.5 text-slate-500 hover:text-slate-900 transition cursor-pointer">
+                                        <i class="fa-regular fa-calendar"></i>
+                                    </button>
+                                    <input type="date" id="tarikhKeluarPicker" tabindex="-1"
+                                        onchange="syncPickerToSlashInput('tarikhKeluarPicker', 'tarikhKeluar')"
+                                        class="sr-only">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="kepada" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                    Kepada
+                                </label>
+                                <input type="text" id="kepada" placeholder="Penerima / unit / pegawai"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                            </div>
+
+                            <div class="md:col-span-2 lg:col-span-4">
+                                <label for="catatan" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                                    Catatan
+                                </label>
+                                <input type="text" id="catatan" placeholder="Minit / tindakan / catatan tambahan"
+                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                            </div>
+                        </div>
+
+                        <!-- ACTION BUTTONS: SIMPAN DRAF & SIMPAN REKOD SURAT -->
+                        <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <button type="button" onclick="handleSaveDraft()"
+                                class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 transition cursor-pointer">
+                                <i class="fa-regular fa-floppy-disk"></i>
+                                <span>Simpan Draf</span>
+                            </button>
+
+                            <button type="submit" id="submitRecordBtn"
+                                class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-md shadow-slate-900/15 transition cursor-pointer">
+                                <i class="fa-solid fa-check-circle"></i>
+                                <span>Simpan Rekod Surat</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- DRAFTS LIST BELOW THE FORM -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-7">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 mb-5 border-b border-slate-100">
+                        <div>
+                            <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-pen-to-square text-amber-600"></i>
+                                <span>Senarai Draf Tersimpan</span>
+                            </h4>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Draf yang disimpan sementara sebelum disahkan ke dalam buku daftar surat.
+                            </p>
+                        </div>
+                        <span id="draftSectionCount"
+                            class="self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900">
+                            0 Draf
+                        </span>
+                    </div>
+
+                    <div id="draftsContainer" class="space-y-3">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: REGISTERED RECORDS LIST -->
+            <section id="viewList" class="hidden space-y-5">
+                <!-- CLASSIFICATION TABS (Hidden during Print via #listTabsBar) -->
+                <div id="listTabsBar" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button type="button" id="tabOfficial" onclick="switchListTab('Dokumen Rasmi Terperingkat')"
+                        class="flex items-center justify-between px-5 py-4 rounded-2xl border text-left transition cursor-pointer bg-slate-900 text-white border-slate-900 shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-file-shield text-lg"></i>
+                            <div>
+                                <div class="font-bold text-sm">Dokumen Rasmi Terperingkat</div>
+                                <div class="text-xs opacity-75">Senarai rekod rasmi terperingkat</div>
+                            </div>
+                        </div>
+                        <span id="countOfficialBadge"
+                            class="px-3 py-1 rounded-full text-xs font-bold bg-white/15 text-white">
+                            0
+                        </span>
+                    </button>
+
+                    <button type="button" id="tabSecret" onclick="switchListTab('Dokumen Sulit')"
+                        class="flex items-center justify-between px-5 py-4 rounded-2xl border text-left transition cursor-pointer bg-white hover:bg-rose-50/40 text-slate-800 border-slate-200">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-user-secret text-lg text-rose-800"></i>
+                            <div>
+                                <div class="font-bold text-sm">Dokumen Sulit</div>
+                                <div class="text-xs text-slate-500">Senarai rekod dokumen sulit</div>
+                            </div>
+                        </div>
+                        <span id="countSecretBadge"
+                            class="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-900">
+                            0
+                        </span>
+                    </button>
+                </div>
+
+                <!-- LIST CARD -->
+                <div id="listCardContainer" class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6">
+                    <!-- Print/Export Header: ONLY Title (Centered) & Table -->
+                    <div id="printExportHeader" class="print-only-header">
+                        <h1 id="printExportTitle" class="print-doc-title">DOKUMEN RASMI TERPERINGKAT</h1>
+                    </div>
+
+                    <!-- Filter & Search Controls (Hidden during Print) -->
+                    <div class="list-toolbar-controls flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-4 mb-4 border-b border-slate-100">
+                        <div>
+                            <h3 id="activeListHeading" class="text-base sm:text-lg font-bold text-slate-900">
+                                DOKUMEN RASMI TERPERINGKAT
+                            </h3>
+                            <p class="text-xs text-slate-500">
+                                Paparan maksimum 20 rekod setiap halaman
+                            </p>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            <div class="relative flex-1 sm:flex-initial min-w-[210px]">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="text" id="searchInput" oninput="onFilterChange()"
+                                    placeholder="Cari no. rujukan, daripada, perkara..."
+                                    class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-slate-800">
+                            </div>
+
+                            <select id="filterYear" onchange="onFilterChange()"
+                                class="px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                                <option value="">Semua Tahun</option>
+                            </select>
+
+                            <select id="filterMonth" onchange="onFilterChange()"
+                                class="px-3 py-2 rounded-xl border border-slate-300 text-xs sm:text-sm bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                                <option value="">Semua Bulan</option>
+                                <option value="01">Januari</option>
+                                <option value="02">Februari</option>
+                                <option value="03">Mac</option>
+                                <option value="04">April</option>
+                                <option value="05">Mei</option>
+                                <option value="06">Jun</option>
+                                <option value="07">Julai</option>
+                                <option value="08">Ogos</option>
+                                <option value="09">September</option>
+                                <option value="10">Oktober</option>
+                                <option value="11">November</option>
+                                <option value="12">Disember</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- TABLE (ALL HEADERS & CELLS CENTERED) -->
+                    <div class="table-scroll-wrap overflow-x-auto rounded-xl border border-slate-200">
+                        <table id="recordsTable" class="w-full border-collapse text-xs sm:text-sm">
+                            <thead>
+                                <tr class="bg-slate-900 text-white">
+                                    <th class="px-3 py-3 font-semibold border border-slate-800 whitespace-nowrap">BIL</th>
+                                    <th class="px-3 py-3 font-semibold border border-slate-800 whitespace-nowrap">TARIKH TERIMA</th>
+                                    <th class="px-3 py-3 font-semibold border border-slate-800 whitespace-nowrap">TARIKH SURAT</th>
+                                    <th class="px-3 py-3 font-semibold border border-slate-800 whitespace-nowrap">NO.RUJUKAN</th>
+                                    <th class="px-3 py-3 font-semibold border border-slate-800">DARIPADA</th>
+                                    <th class="px-3 py-3 font-semibold border border-slate-800">PERKARA</th>
+                                    <th class="px-3 py-3 font-semibold border border-slate-800 whitespace-nowrap">TARIKH KELUAR</th>
+                                    <th class="px-3 py-3 font-semibold border border-slate-800">KEPADA</th>
+                                    <th class="px-3 py-3 font-semibold border border-slate-800">CATATAN</th>
+                                    <th class="col-tindakan-head px-3 py-3 font-semibold border border-slate-800 whitespace-nowrap">TINDAKAN</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recordsTableBody" class="divide-y divide-slate-200 bg-white">
+                                <!-- Rendered dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- PAGINATION (20 ITEMS PER PAGE) -->
+                    <div class="pagination-bar mt-4 pt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs sm:text-sm text-slate-600">
+                        <div id="paginationInfo">Memaparkan 0 rekod</div>
+                        <div id="paginationControls" class="flex items-center gap-1.5"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- GOOGLE SHEETS SETTINGS MODAL -->
+    <div id="sheetsModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-table text-emerald-600"></i>
+                    <span>Tetapan Google Sheets (Apps Script)</span>
+                </h3>
+                <button type="button" onclick="closeSheetsModal()" class="text-slate-400 hover:text-slate-700 cursor-pointer">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed">
+                Pautan Web App Google Apps Script digunakan untuk menyegerak rekod dan draf secara automatik ke Google Sheets.
+            </p>
+
+            <div>
+                <label for="sheetsUrlInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                    Web App URL (/exec)
+                </label>
+                <input type="url" id="sheetsUrlInput" placeholder="https://script.google.com/macros/s/.../exec"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono-code text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-800">
+            </div>
+
+            <div class="pt-2 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeSheetsModal()"
+                    class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="saveSheetsUrl()"
+                    class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white cursor-pointer">
+                    Simpan &amp; Segerak
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastBanner"
+        class="hidden fixed bottom-5 right-5 z-50 max-w-sm bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl text-xs sm:text-sm font-medium flex items-center gap-2.5">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMessage">Selesai</span>
+    </div>
+
+    <script>
+        const DEFAULT_GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbwVQB2r91pWSikxEA2NtnHMPrv_6CwCcU8hj4oQzhJQzE157YdP2538mfkejGQ8Tdrl0A/exec';
+        const STORAGE_KEY_URL = 'sbds_google_sheets_url_v1';
+        const STORAGE_KEY_RECORDS = 'sbds_records_v1';
+        const STORAGE_KEY_DRAFTS = 'sbds_drafts_v1';
+        const ITEMS_PER_PAGE = 20;
+
+        let state = {
+            currentView: 'register',
+            activeTab: 'Dokumen Rasmi Terperingkat',
+            currentPage: 1,
+            records: [],
+            drafts: [],
+            sheetsUrl: '',
+            isSyncing: false
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            state.sheetsUrl = localStorage.getItem(STORAGE_KEY_URL) || DEFAULT_GOOGLE_SHEETS_URL;
+            state.records = loadFromStorage(STORAGE_KEY_RECORDS);
+            state.drafts = loadFromStorage(STORAGE_KEY_DRAFTS);
+
+            setDefaultTerimaDate();
+            renderAll();
+
+            document.addEventListener('click', (e) => {
+                const dropdown = document.getElementById('exportDropdown');
+                if (dropdown && !dropdown.classList.contains('hidden') && !e.target.closest('#listActionsGroup')) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+
+            if (state.sheetsUrl) {
+                syncWithCloud(false);
+            } else {
+                updateSyncBadge(false, 'URL Belum Ditetapkan');
+            }
+        });
+
+        function loadFromStorage(key) {
+            try {
+                const raw = localStorage.getItem(key);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (_) {
+                return [];
+            }
+        }
+
+        function persistLocal() {
+            localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(state.records));
+            localStorage.setItem(STORAGE_KEY_DRAFTS, JSON.stringify(state.drafts));
+        }
+
+        function enterSystem() {
+            document.getElementById('landingView').classList.add('hidden');
+            document.getElementById('appShell').classList.remove('hidden');
+            switchMainView(state.currentView || 'register');
+        }
+
+        function backToLanding() {
+            document.getElementById('appShell').classList.add('hidden');
+            document.getElementById('landingView').classList.remove('hidden');
+        }
+
+        function switchMainView(viewName) {
+            state.currentView = viewName;
+            const viewReg = document.getElementById('viewRegister');
+            const viewLst = document.getElementById('viewList');
+            const navRegBtn = document.getElementById('navRegisterBtn');
+            const navLstBtn = document.getElementById('navListBtn');
+            const listActionsGroup = document.getElementById('listActionsGroup');
+
+            if (viewName === 'list') {
+                viewReg.classList.add('hidden');
+                viewLst.classList.remove('hidden');
+                listActionsGroup.classList.remove('hidden');
+                listActionsGroup.classList.add('flex');
+
+                navLstBtn.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-900 text-white transition cursor-pointer';
+                navRegBtn.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer';
+                renderListView();
+            } else {
+                viewLst.classList.add('hidden');
+                viewReg.classList.remove('hidden');
+                listActionsGroup.classList.add('hidden');
+                listActionsGroup.classList.remove('flex');
+
+                navRegBtn.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-900 text-white transition cursor-pointer';
+                navLstBtn.className = 'inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer';
+                renderDrafts();
+            }
+        }
+
+        function selectClassification(cls) {
+            document.getElementById('klasifikasi').value = cls;
+            const btnOfficial = document.getElementById('btnClassOfficial');
+            const btnSecret = document.getElementById('btnClassSecret');
+
+            const baseBtn = 'flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl border text-sm font-semibold transition cursor-pointer';
+            const inactiveBtn = 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300';
+
+            if (cls === 'Dokumen Sulit') {
+                btnSecret.className = `${baseBtn} class-btn-active-secret`;
+                btnOfficial.className = `${baseBtn} ${inactiveBtn}`;
+            } else {
+                btnOfficial.className = `${baseBtn} class-btn-active-official`;
+                btnSecret.className = `${baseBtn} ${inactiveBtn}`;
+            }
+        }
+
+        /* Date formatting helpers: DD.MM.YYYY display/export, dd/mm/yyyy form input */
+        function toIsoDate(val) {
+            if (val === null || val === undefined || val === '') return '';
+            if (val instanceof Date && !Number.isNaN(val.getTime())) {
+                const y = val.getFullYear();
+                const m = String(val.getMonth() + 1).padStart(2, '0');
+                const d = String(val.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+
+            const raw = String(val).trim();
+            if (!raw) return '';
+
+            const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+            if (isoMatch) {
+                return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+            }
+
+            const dotMatch = raw.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+            if (dotMatch) {
+                return `${dotMatch[3]}-${dotMatch[2].padStart(2, '0')}-${dotMatch[1].padStart(2, '0')}`;
+            }
+
+            const slashMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (slashMatch) {
+                return `${slashMatch[3]}-${slashMatch[2].padStart(2, '0')}-${slashMatch[1].padStart(2, '0')}`;
+            }
+
+            if (/^\d{5}$/.test(raw)) {
+                const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+                const dObj = new Date(excelEpoch.getTime() + Number(raw) * 86400000);
+                if (!Number.isNaN(dObj.getTime())) {
+                    return `${dObj.getUTCFullYear()}-${String(dObj.getUTCMonth() + 1).padStart(2, '0')}-${String(dObj.getUTCDate()).padStart(2, '0')}`;
+                }
+            }
+
+            const parsed = new Date(raw);
+            if (!Number.isNaN(parsed.getTime())) {
+                return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+            }
+
+            return '';
+        }
+
+        function formatDotDate(val) {
+            const iso = toIsoDate(val);
+            if (!iso) return '';
+            const [y, m, d] = iso.split('-');
+            return `${d}.${m}.${y}`;
+        }
+
+        function formatSlashFromIso(isoStr) {
+            const iso = toIsoDate(isoStr);
+            if (!iso) return '';
+            const [y, m, d] = iso.split('-');
+            return `${d}/${m}/${y}`;
+        }
+
+        function slashToIsoDate(slashStr) {
+            const raw = String(slashStr || '').trim();
+            if (!raw) return '';
+            const m = raw.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+            if (!m) return toIsoDate(raw);
+            const dd = Number(m[1]);
+            const mm = Number(m[2]);
+            const yyyy = Number(m[3]);
+            if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return '';
+            const check = new Date(yyyy, mm - 1, dd);
+            if (check.getFullYear() !== yyyy || check.getMonth() !== mm - 1 || check.getDate() !== dd) {
+                return '';
+            }
+            return `${yyyy}-${String(mm).padStart(2, '0')}-${String(dd).padStart(2, '0')}`;
+        }
+
+        function maskSlashDateInput(input) {
+            const digits = input.value.replace(/\D/g, '').slice(0, 8);
+            if (digits.length > 4) {
+                input.value = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+            } else if (digits.length > 2) {
+                input.value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+            } else {
+                input.value = digits;
+            }
+        }
+
+        function normalizeSlashDateField(input) {
+            const val = input.value.trim();
+            if (!val) return;
+            const iso = slashToIsoDate(val);
+            if (iso) {
+                input.value = formatSlashFromIso(iso);
+            }
+        }
+
+        function openNativeDatePicker(pickerId) {
+            const picker = document.getElementById(pickerId);
+            if (!picker) return;
+            if (typeof picker.showPicker === 'function') {
+                picker.showPicker();
+            } else {
+                picker.click();
+            }
+        }
+
+        function syncPickerToSlashInput(pickerId, targetInputId) {
+            const picker = document.getElementById(pickerId);
+            const target = document.getElementById(targetInputId);
+            if (!picker || !target) return;
+            target.value = formatSlashFromIso(picker.value);
+        }
+
+        function setDefaultTerimaDate() {
+            const now = new Date();
+            const isoToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            document.getElementById('tarikhTerima').value = formatSlashFromIso(isoToday);
+            document.getElementById('tarikhTerimaPicker').value = isoToday;
+        }
+
+        function collectFormValues() {
+            const existingId = document.getElementById('editingId').value.trim();
+            return {
+                id: existingId || ('SRT-' + Date.now() + '-' + Math.floor(Math.random() * 1000)),
+                klasifikasi: document.getElementById('klasifikasi').value || 'Dokumen Rasmi Terperingkat',
+                tarikhTerima: slashToIsoDate(document.getElementById('tarikhTerima').value),
+                tarikhSurat: slashToIsoDate(document.getElementById('tarikhSurat').value),
+                noRujukan: document.getElementById('noRujukan').value.trim(),
+                daripada: document.getElementById('daripada').value.trim(),
+                perkara: document.getElementById('perkara').value.trim(),
+                tarikhKeluar: slashToIsoDate(document.getElementById('tarikhKeluar').value),
+                kepada: document.getElementById('kepada').value.trim(),
+                catatan: document.getElementById('catatan').value.trim()
+            };
+        }
+
+        function resetForm() {
+            document.getElementById('letterForm').reset();
+            document.getElementById('editingId').value = '';
+            document.getElementById('editingSource').value = '';
+            document.getElementById('tarikhSuratPicker').value = '';
+            document.getElementById('tarikhKeluarPicker').value = '';
+            document.getElementById('formHeading').textContent = 'Daftar Rekod Surat Baharu';
+            selectClassification('Dokumen Rasmi Terperingkat');
+            setDefaultTerimaDate();
+        }
+
+        function handleSaveDraft() {
+            const entry = collectFormValues();
+            if (!entry.noRujukan && !entry.daripada && !entry.perkara) {
+                showToast('Sila isi sekurang-kurangnya No. Rujukan, Daripada atau Perkara untuk menyimpan draf.', 'warn');
+                return;
+            }
+
+            const prevSource = document.getElementById('editingSource').value;
+            if (prevSource === 'record') {
+                state.records = state.records.filter(r => r.id !== entry.id);
+            }
+
+            const idx = state.drafts.findIndex(d => d.id === entry.id);
+            if (idx >= 0) {
+                state.drafts[idx] = entry;
+            } else {
+                state.drafts.unshift(entry);
+            }
+
+            persistLocal();
+            renderAll();
+            resetForm();
+            showToast('Draf berjaya disimpan.', 'success');
+            pushToCloudSilent();
+        }
+
+        function handleSaveRecord(event) {
+            event.preventDefault();
+            const entry = collectFormValues();
+            if (!entry.noRujukan || !entry.daripada || !entry.perkara) {
+                showToast('Sila lengkapkan medan wajib: No. Rujukan, Daripada dan Perkara.', 'warn');
+                return;
+            }
+
+            state.drafts = state.drafts.filter(d => d.id !== entry.id);
+
+            const recIdx = state.records.findIndex(r => r.id === entry.id);
+            if (recIdx >= 0) {
+                state.records[recIdx] = entry;
+            } else {
+                state.records.unshift(entry);
+            }
+
+            state.activeTab = entry.klasifikasi;
+            persistLocal();
+            renderAll();
+            resetForm();
+            showToast('Rekod surat berjaya disimpan.', 'success');
+            pushToCloudSilent();
+        }
+
+        function editItem(id, source) {
+            const collection = source === 'draft' ? state.drafts : state.records;
+            const item = collection.find(x => x.id === id);
+            if (!item) return;
+
+            switchMainView('register');
+            document.getElementById('editingId').value = item.id;
+            document.getElementById('editingSource').value = source;
+            document.getElementById('formHeading').textContent = source === 'draft'
+                ? 'Kemaskini Draf Surat'
+                : 'Kemaskini Rekod Surat';
+
+            selectClassification(item.klasifikasi || 'Dokumen Rasmi Terperingkat');
+
+            const isoTerima = toIsoDate(item.tarikhTerima);
+            const isoSurat = toIsoDate(item.tarikhSurat);
+            const isoKeluar = toIsoDate(item.tarikhKeluar);
+
+            document.getElementById('tarikhTerima').value = formatSlashFromIso(isoTerima);
+            document.getElementById('tarikhTerimaPicker').value = isoTerima;
+
+            document.getElementById('tarikhSurat').value = formatSlashFromIso(isoSurat);
+            document.getElementById('tarikhSuratPicker').value = isoSurat;
+
+            document.getElementById('tarikhKeluar').value = formatSlashFromIso(isoKeluar);
+            document.getElementById('tarikhKeluarPicker').value = isoKeluar;
+
+            document.getElementById('noRujukan').value = item.noRujukan || '';
+            document.getElementById('daripada').value = item.daripada || '';
+            document.getElementById('perkara').value = item.perkara || '';
+            document.getElementById('kepada').value = item.kepada || '';
+            document.getElementById('catatan').value = item.catatan || '';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteItem(id, source) {
+            if (!confirm('Adakah anda pasti ingin memadamkan item ini?')) return;
+            if (source === 'draft') {
+                state.drafts = state.drafts.filter(d => d.id !== id);
+            } else {
+                state.records = state.records.filter(r => r.id !== id);
+            }
+            persistLocal();
+            renderAll();
+            showToast('Item telah dipadam.', 'success');
+            pushToCloudSilent();
+        }
+
+        function promoteDraftToRecord(id) {
+            const draft = state.drafts.find(d => d.id === id);
+            if (!draft) return;
+            if (!draft.noRujukan || !draft.daripada || !draft.perkara) {
+                editItem(id, 'draft');
+                showToast('Sila lengkapkan No. Rujukan, Daripada dan Perkara sebelum menyimpan rekod.', 'warn');
+                return;
+            }
+            state.drafts = state.drafts.filter(d => d.id !== id);
+            state.records.unshift(draft);
+            persistLocal();
+            renderAll();
+            showToast('Draf dipindahkan ke Senarai Rekod Surat.', 'success');
+            pushToCloudSilent();
+        }
+
+        function renderAll() {
+            updateCounters();
+            renderDrafts();
+            populateYearFilter();
+            if (state.currentView === 'list') {
+                renderListView();
+            }
+        }
+
+        function updateCounters() {
+            const draftCount = state.drafts.length;
+            const totalCount = state.records.length;
+            const officialCount = state.records.filter(r => (r.klasifikasi || 'Dokumen Rasmi Terperingkat') === 'Dokumen Rasmi Terperingkat').length;
+            const secretCount = state.records.filter(r => r.klasifikasi === 'Dokumen Sulit').length;
+
+            document.getElementById('draftCounterBadge').textContent = `${draftCount} Draf`;
+            document.getElementById('draftSectionCount').textContent = `${draftCount} Draf`;
+            document.getElementById('totalRecordsBadge').textContent = `${totalCount} Rekod`;
+            document.getElementById('countOfficialBadge').textContent = officialCount;
+            document.getElementById('countSecretBadge').textContent = secretCount;
+        }
+
+        function renderDrafts() {
+            const container = document.getElementById('draftsContainer');
+            if (!state.drafts.length) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 rounded-xl border border-dashed border-slate-200 text-slate-400 text-sm">
+                        Tiada draf surat tersimpan buat masa ini.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = state.drafts.map(d => `
+                <div class="p-4 rounded-xl border border-amber-200/90 bg-amber-50/40 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                    <div class="space-y-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold ${d.klasifikasi === 'Dokumen Sulit' ? 'bg-rose-100 text-rose-900' : 'bg-slate-900 text-white'}">
+                                ${escapeHtml(d.klasifikasi || 'Dokumen Rasmi Terperingkat')}
+                            </span>
+                            <span class="font-mono-code text-xs font-semibold text-slate-700">
+                                ${escapeHtml(d.noRujukan || '(Tiada No. Rujukan)')}
+                            </span>
+                            ${formatDotDate(d.tarikhTerima) ? `<span class="text-xs text-slate-500">• Terima: ${formatDotDate(d.tarikhTerima)}</span>` : ''}
+                        </div>
+                        <div class="text-sm font-semibold text-slate-900">
+                            ${escapeHtml(d.perkara || '(Tiada Perkara)')}
+                        </div>
+                        <div class="text-xs text-slate-600">
+                            Daripada: <span class="font-medium">${escapeHtml(d.daripada || '-')}</span>
+                            ${d.kepada ? ` • Kepada: <span class="font-medium">${escapeHtml(d.kepada)}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 shrink-0">
+                        <button type="button" onclick="promoteDraftToRecord('${escapeAttr(d.id)}')"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white cursor-pointer">
+                            Sahkan Rekod
+                        </button>
+                        <button type="button" onclick="editItem('${escapeAttr(d.id)}', 'draft')"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 cursor-pointer">
+                            Edit
+                        </button>
+                        <button type="button" onclick="deleteItem('${escapeAttr(d.id)}', 'draft')"
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 cursor-pointer">
+                            Padam
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchListTab(tabName) {
+            state.activeTab = tabName;
+            state.currentPage = 1;
+
+            const tabOfficial = document.getElementById('tabOfficial');
+            const tabSecret = document.getElementById('tabSecret');
+
+            if (tabName === 'Dokumen Sulit') {
+                tabSecret.className = 'flex items-center justify-between px-5 py-4 rounded-2xl border text-left transition cursor-pointer bg-rose-900 text-white border-rose-900 shadow-sm';
+                tabOfficial.className = 'flex items-center justify-between px-5 py-4 rounded-2xl border text-left transition cursor-pointer bg-white hover:bg-slate-50 text-slate-800 border-slate-200';
+            } else {
+                tabOfficial.className = 'flex items-center justify-between px-5 py-4 rounded-2xl border text-left transition cursor-pointer bg-slate-900 text-white border-slate-900 shadow-sm';
+                tabSecret.className = 'flex items-center justify-between px-5 py-4 rounded-2xl border text-left transition cursor-pointer bg-white hover:bg-rose-50/40 text-slate-800 border-slate-200';
+            }
+
+            renderListView();
+        }
+
+        function populateYearFilter() {
+            const yearSelect = document.getElementById('filterYear');
+            const currentVal = yearSelect.value;
+            const years = new Set();
+
+            state.records.forEach(r => {
+                [r.tarikhTerima, r.tarikhSurat, r.tarikhKeluar].forEach(dt => {
+                    const iso = toIsoDate(dt);
+                    if (iso) years.add(iso.slice(0, 4));
+                });
+            });
+
+            const sortedYears = Array.from(years).sort((a, b) => b.localeCompare(a));
+            yearSelect.innerHTML = '<option value="">Semua Tahun</option>' +
+                sortedYears.map(y => `<option value="${y}">${y}</option>`).join('');
+
+            if (sortedYears.includes(currentVal)) {
+                yearSelect.value = currentVal;
+            }
+        }
+
+        function onFilterChange() {
+            state.currentPage = 1;
+            renderListView();
+        }
+
+        function getFilteredRecords() {
+            const query = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+            const year = document.getElementById('filterYear').value;
+            const month = document.getElementById('filterMonth').value;
+
+            return state.records.filter(r => {
+                const cls = r.klasifikasi || 'Dokumen Rasmi Terperingkat';
+                if (cls !== state.activeTab) return false;
+
+                const refIso = toIsoDate(r.tarikhSurat) || toIsoDate(r.tarikhTerima) || toIsoDate(r.tarikhKeluar);
+                if (year && (!refIso || refIso.slice(0, 4) !== year)) return false;
+                if (month && (!refIso || refIso.slice(5, 7) !== month)) return false;
+
+                if (query) {
+                    const hay = [
+                        r.noRujukan,
+                        r.daripada,
+                        r.perkara,
+                        r.kepada,
+                        r.catatan,
+                        formatDotDate(r.tarikhTerima),
+                        formatDotDate(r.tarikhSurat),
+                        formatDotDate(r.tarikhKeluar)
+                    ].join(' ').toLowerCase();
+                    if (!hay.includes(query)) return false;
+                }
+
+                return true;
+            });
+        }
+
+        function renderListView() {
+            const titleText = state.activeTab === 'Dokumen Sulit'
+                ? 'DOKUMEN SULIT'
+                : 'DOKUMEN RASMI TERPERINGKAT';
+
+            document.getElementById('activeListHeading').textContent = titleText;
+            document.getElementById('printExportTitle').textContent = titleText;
+
+            const filtered = getFilteredRecords();
+            const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
+            if (state.currentPage > totalPages) state.currentPage = totalPages;
+
+            const startIdx = (state.currentPage - 1) * ITEMS_PER_PAGE;
+            const pageItems = filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+
+            const tbody = document.getElementById('recordsTableBody');
+            if (!pageItems.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="px-4 py-8 text-slate-400 text-sm">
+                            Tiada rekod surat ditemui bagi pilihan ini.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = pageItems.map((item, idx) => {
+                    const bil = startIdx + idx + 1;
+                    return `
+                        <tr class="hover:bg-slate-50/80 transition">
+                            <td class="px-3 py-2.5 border border-slate-200 font-mono-code text-xs">${bil}</td>
+                            <td class="px-3 py-2.5 border border-slate-200 font-mono-code text-xs whitespace-nowrap">${escapeHtml(formatDotDate(item.tarikhTerima) || '-')}</td>
+                            <td class="px-3 py-2.5 border border-slate-200 font-mono-code text-xs whitespace-nowrap">${escapeHtml(formatDotDate(item.tarikhSurat) || '-')}</td>
+                            <td class="px-3 py-2.5 border border-slate-200 font-mono-code text-xs font-medium">${escapeHtml(item.noRujukan || '-')}</td>
+                            <td class="px-3 py-2.5 border border-slate-200">${escapeHtml(item.daripada || '-')}</td>
+                            <td class="px-3 py-2.5 border border-slate-200">${escapeHtml(item.perkara || '-')}</td>
+                            <td class="px-3 py-2.5 border border-slate-200 font-mono-code text-xs whitespace-nowrap">${escapeHtml(formatDotDate(item.tarikhKeluar) || '-')}</td>
+                            <td class="px-3 py-2.5 border border-slate-200">${escapeHtml(item.kepada || '-')}</td>
+                            <td class="px-3 py-2.5 border border-slate-200">${escapeHtml(item.catatan || '-')}</td>
+                            <td class="col-tindakan px-3 py-2.5 border border-slate-200 whitespace-nowrap">
+                                <div class="inline-flex items-center justify-center gap-1.5">
+                                    <button type="button" onclick="editItem('${escapeAttr(item.id)}', 'record')" title="Edit Rekod"
+                                        class="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer">
+                                        <i class="fa-regular fa-pen-to-square"></i>
+                                    </button>
+                                    <button type="button" onclick="deleteItem('${escapeAttr(item.id)}', 'record')" title="Padam Rekod"
+                                        class="p-1.5 rounded-lg text-rose-600 hover:text-rose-800 hover:bg-rose-50 transition cursor-pointer">
+                                        <i class="fa-regular fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            renderPagination(filtered.length, totalPages);
+        }
+
+        function renderPagination(totalFiltered, totalPages) {
+            const info = document.getElementById('paginationInfo');
+            const controls = document.getElementById('paginationControls');
+
+            if (!totalFiltered) {
+                info.textContent = 'Memaparkan 0 rekod';
+                controls.innerHTML = '';
+                return;
+            }
+
+            const start = (state.currentPage - 1) * ITEMS_PER_PAGE + 1;
+            const end = Math.min(totalFiltered, state.currentPage * ITEMS_PER_PAGE);
+            info.textContent = `Memaparkan ${start}–${end} daripada ${totalFiltered} rekod`;
+
+            let html = '';
+            html += `<button type="button" ${state.currentPage <= 1 ? 'disabled' : ''} onclick="goToPage(${state.currentPage - 1})"
+                class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold ${state.currentPage <= 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-50 cursor-pointer'}">Prev</button>`;
+
+            for (let p = 1; p <= totalPages; p++) {
+                const activeCls = p === state.currentPage
+                    ? 'bg-slate-900 text-white border-slate-900'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50';
+                html += `<button type="button" onclick="goToPage(${p})"
+                    class="px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer ${activeCls}">${p}</button>`;
+            }
+
+            html += `<button type="button" ${state.currentPage >= totalPages ? 'disabled' : ''} onclick="goToPage(${state.currentPage + 1})"
+                class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold ${state.currentPage >= totalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-50 cursor-pointer'}">Next</button>`;
+
+            controls.innerHTML = html;
+        }
+
+        function goToPage(page) {
+            state.currentPage = page;
+            renderListView();
+        }
+
+        /* Export & Print (Centered Title + Centered Table Only, A4) */
+        function toggleExportMenu(event) {
+            event.stopPropagation();
+            document.getElementById('exportDropdown').classList.toggle('hidden');
+        }
+
+        function printActiveList() {
+            if (state.currentView !== 'list') return;
+            const titleText = state.activeTab === 'Dokumen Sulit'
+                ? 'DOKUMEN SULIT'
+                : 'DOKUMEN RASMI TERPERINGKAT';
+            document.getElementById('printExportTitle').textContent = titleText;
+            window.print();
+        }
+
+        function buildExportRows() {
+            const list = getFilteredRecords();
+            const headers = [
+                'BIL',
+                'TARIKH TERIMA',
+                'TARIKH SURAT',
+                'NO.RUJUKAN',
+                'DARIPADA',
+                'PERKARA',
+                'TARIKH KELUAR',
+                'KEPADA',
+                'CATATAN'
+            ];
+
+            const rows = list.map((item, idx) => [
+                String(idx + 1),
+                formatDotDate(item.tarikhTerima) || '-',
+                formatDotDate(item.tarikhSurat) || '-',
+                item.noRujukan || '-',
+                item.daripada || '-',
+                item.perkara || '-',
+                formatDotDate(item.tarikhKeluar) || '-',
+                item.kepada || '-',
+                item.catatan || '-'
+            ]);
+
+            return { headers, rows };
+        }
+
+        function exportToWordA4() {
+            document.getElementById('exportDropdown').classList.add('hidden');
+            const titleText = state.activeTab === 'Dokumen Sulit'
+                ? 'DOKUMEN SULIT'
+                : 'DOKUMEN RASMI TERPERINGKAT';
+            const { headers, rows } = buildExportRows();
+
+            const thHtml = headers.map(h =>
+                `<th style="border:1px solid #000000;padding:6px;text-align:center;vertical-align:middle;font-weight:bold;background:#f1f5f9;">${escapeHtml(h)}</th>`
+            ).join('');
+
+            const trHtml = rows.length
+                ? rows.map(r => `<tr>${r.map(c =>
+                    `<td style="border:1px solid #000000;padding:6px;text-align:center;vertical-align:middle;">${escapeHtml(c)}</td>`
+                ).join('')}</tr>`).join('')
+                : `<tr><td colspan="9" style="border:1px solid #000000;padding:10px;text-align:center;vertical-align:middle;">Tiada rekod</td></tr>`;
+
+            const docHtml = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office"
+                      xmlns:w="urn:schemas-microsoft-com:office:word"
+                      xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta charset="utf-8">
+                    <title>${escapeHtml(titleText)}</title>
+                    <style>
+                        @page { size: A4 landscape; margin: 12mm; }
+                        body { font-family: Arial, sans-serif; font-size: 9pt; color: #000000; }
+                        h1 { text-align: center; font-size: 14pt; font-weight: bold; margin: 0 0 14px 0; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { text-align: center !important; vertical-align: middle !important; }
+                    </style>
+                </head>
+                <body>
+                    <h1 style="text-align:center;">${escapeHtml(titleText)}</h1>
+                    <table>
+                        <thead><tr>${thHtml}</tr></thead>
+                        <tbody>${trHtml}</tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['﻿', docHtml], { type: 'application/msword;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${titleText.replace(/\s+/g, '_')}_A4.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showToast('Fail Word (.doc) format A4 berjaya dimuat turun.', 'success');
+        }
+
+        function exportToExcelA4() {
+            document.getElementById('exportDropdown').classList.add('hidden');
+            if (typeof XLSX === 'undefined') {
+                showToast('Pustaka Excel tidak tersedia.', 'warn');
+                return;
+            }
+
+            const titleText = state.activeTab === 'Dokumen Sulit'
+                ? 'DOKUMEN SULIT'
+                : 'DOKUMEN RASMI TERPERINGKAT';
+            const { headers, rows } = buildExportRows();
+
+            const aoa = [
+                [titleText],
+                headers,
+                ...rows
+            ];
+
+            const ws = XLSX.utils.aoa_to_sheet(aoa);
+            ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+            ws['!cols'] = headers.map((_, idx) => ({ wch: idx === 5 ? 34 : 18 }));
+
+            for (let r = 0; r < aoa.length; r++) {
+                for (let c = 0; c < headers.length; c++) {
+                    const cellRef = XLSX.utils.encode_cell({ r, c });
+                    if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+                    ws[cellRef].s = {
+                        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+                        font: { bold: r <= 1, sz: r === 0 ? 13 : 10 },
+                        border: r >= 1 ? {
+                            top: { style: 'thin', color: { rgb: '000000' } },
+                            bottom: { style: 'thin', color: { rgb: '000000' } },
+                            left: { style: 'thin', color: { rgb: '000000' } },
+                            right: { style: 'thin', color: { rgb: '000000' } }
+                        } : undefined
+                    };
+                }
+            }
+
+            ws['!pageSetup'] = { paperSize: 9, orientation: 'landscape', fitToWidth: 1, fitToHeight: 0 };
+            ws['!sheetViews'] = [{ showGridLines: true }];
+
+            const wb = XLSX.utils.book_new();
+            const sheetName = titleText.slice(0, 31);
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+            XLSX.writeFile(wb, `${titleText.replace(/\s+/g, '_')}_A4.xlsx`, { cellStyles: true });
+            showToast('Fail Excel (.xlsx) format A4 berjaya dimuat turun.', 'success');
+        }
+
+        /* Google Sheets Modal & Cloud Sync */
+        function openSheetsModal() {
+            document.getElementById('sheetsUrlInput').value = state.sheetsUrl || '';
+            document.getElementById('sheetsModal').classList.remove('hidden');
+        }
+
+        function closeSheetsModal() {
+            document.getElementById('sheetsModal').classList.add('hidden');
+        }
+
+        function saveSheetsUrl() {
+            const url = document.getElementById('sheetsUrlInput').value.trim();
+            state.sheetsUrl = url;
+            localStorage.setItem(STORAGE_KEY_URL, url);
+            closeSheetsModal();
+            if (url) {
+                syncWithCloud(true);
+            } else {
+                updateSyncBadge(false, 'URL Belum Ditetapkan');
+            }
+        }
+
+        function updateSyncBadge(connected, label) {
+            const badge = document.getElementById('syncStatusBadge');
+            if (connected) {
+                badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200';
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>${escapeHtml(label || 'Google Sheets Disambung')}</span>`;
+            } else {
+                badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200';
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span><span>${escapeHtml(label || 'Mod Tempatan')}</span>`;
+            }
+        }
+
+        function normalizeCloudItem(raw) {
+            return {
+                id: String(raw.id || ('SRT-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6))),
+                klasifikasi: raw.klasifikasi === 'Dokumen Sulit' ? 'Dokumen Sulit' : 'Dokumen Rasmi Terperingkat',
+                tarikhTerima: toIsoDate(raw.tarikhTerima),
+                tarikhSurat: toIsoDate(raw.tarikhSurat),
+                noRujukan: String(raw.noRujukan || '').trim(),
+                daripada: String(raw.daripada || '').trim(),
+                perkara: String(raw.perkara || '').trim(),
+                tarikhKeluar: toIsoDate(raw.tarikhKeluar),
+                kepada: String(raw.kepada || '').trim(),
+                catatan: String(raw.catatan || '').trim()
+            };
+        }
+
+        async function syncWithCloud(showFeedback) {
+            if (!state.sheetsUrl) {
+                updateSyncBadge(false, 'URL Belum Ditetapkan');
+                if (showFeedback) showToast('Sila masukkan Web App URL Google Sheets terlebih dahulu.', 'warn');
+                return;
+            }
+            if (state.isSyncing) return;
+
+            state.isSyncing = true;
+            const icon = document.getElementById('syncIcon');
+            if (icon) icon.classList.add('fa-spin');
+
+            try {
+                const res = await fetch(state.sheetsUrl, { method: 'GET' });
+                const data = await res.json();
+
+                if (data && data.ok) {
+                    const cloudRecords = Array.isArray(data.records) ? data.records.map(normalizeCloudItem) : [];
+                    const cloudDrafts = Array.isArray(data.drafts) ? data.drafts.map(normalizeCloudItem) : [];
+
+                    if (cloudRecords.length > 0 || cloudDrafts.length > 0) {
+                        state.records = cloudRecords;
+                        state.drafts = cloudDrafts;
+                        persistLocal();
+                        renderAll();
+                    } else if (state.records.length > 0 || state.drafts.length > 0) {
+                        await pushToCloudSilent();
+                    }
+
+                    updateSyncBadge(true, 'Google Sheets Disambung');
+                    if (showFeedback) showToast('Penyegerakan dengan Google Sheets berjaya.', 'success');
+                } else {
+                    updateSyncBadge(false, 'Ralat Respon Sheets');
+                    if (showFeedback) showToast('Respon Google Sheets tidak sah.', 'warn');
+                }
+            } catch (_) {
+                updateSyncBadge(false, 'Semak Kebenaran Sheets');
+                if (showFeedback) showToast('Gagal menyegerak ke Google Sheets. Semak akses Web App.', 'warn');
+            } finally {
+                state.isSyncing = false;
+                if (icon) icon.classList.remove('fa-spin');
+            }
+        }
+
+        async function pushToCloudSilent() {
+            if (!state.sheetsUrl) return;
+            try {
+                await fetch(state.sheetsUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        records: state.records,
+                        drafts: state.drafts
+                    })
+                });
+                updateSyncBadge(true, 'Google Sheets Disambung');
+            } catch (_) {
+                updateSyncBadge(false, 'Simpanan Tempatan Aktif');
+            }
+        }
+
+        function showToast(msg, type) {
+            const banner = document.getElementById('toastBanner');
+            const icon = document.getElementById('toastIcon');
+            const text = document.getElementById('toastMessage');
+
+            text.textContent = msg;
+            icon.className = type === 'warn'
+                ? 'fa-solid fa-triangle-exclamation text-amber-400'
+                : 'fa-solid fa-circle-check text-emerald-400';
+
+            banner.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3400);
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapeAttr(str) {
+            return String(str ?? '').replace(/'/g, "\'").replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
